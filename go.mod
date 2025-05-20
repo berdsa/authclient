@@ -1,4 +1,4 @@
-module authclient
+module github.com/berdsa/authclient
 
 go 1.24.3
 
