@@ -204,6 +204,26 @@ func (c *Client) ResetPassword(token, currentPassword, newPassword string) (*Aut
 	return resp, nil
 }
 
+// SetPassword sets a new password for a user
+func (c *Client) SetPassword(email, password string) (*AuthResponse, error) {
+	reqData := NewPasswordRequest{
+		Token:    email,
+		Password: password,
+	}
+
+	reqBody, err := json.Marshal(reqData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal set password request: %w", err)
+	}
+
+	resp, err := c.doRequest("POST", "/api/auth/set-password", reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 // CheckPermission checks if a user has the required permission
 func (c *Client) CheckPermission(email, requiredRole string) (*AuthResponse, error) {
 	reqData := PermissionRequest{
@@ -348,4 +368,42 @@ func GetUserFromContext(ctx context.Context) (UserClaims, error) {
 		return UserClaims{}, errors.New("user claims not found in context")
 	}
 	return claims, nil
+}
+
+// AccessTokenMiddleware creates middleware that ensures the token is an access token
+func (c *Client) AccessTokenMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := ExtractTokenFromHeader(r)
+		if err != nil {
+			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		// Validate token against auth service
+		resp, err := c.ValidateToken(token)
+		if err != nil {
+			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		// Check if the token matches the access token
+		if resp.Token != token {
+			http.Error(w, "Unauthorized: refresh token not allowed", http.StatusUnauthorized)
+			return
+		}
+
+		// Create user claims and add to context
+		claims := UserClaims{
+			UserID: resp.UserID,
+			Email:  resp.Email,
+			Role:   resp.Role,
+		}
+
+		// Add both token and claims to context
+		ctx := context.WithValue(r.Context(), TokenKey, token)
+		ctx = context.WithValue(ctx, UserClaimsKey, claims)
+
+		// Call the next handler with the updated context
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
