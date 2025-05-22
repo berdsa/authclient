@@ -44,9 +44,9 @@ func NewClient(baseURL string, timeout time.Duration) *Client {
 
 // AuthResponse is a common response structure returned by auth endpoints
 type AuthResponse struct {
-	Code    int        `json:"code"`
-	Message string     `json:"message"`
-	Reply   TokenReply `json:"reply,omitempty"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Reply   *TokenReply `json:"reply,omitempty"`
 }
 
 // TokenReply contains the tokens and metadata returned upon successful authentication.
@@ -133,6 +133,25 @@ func (c *Client) Register(email, password, role string) (*AuthResponse, error) {
 	}
 
 	resp, err := c.doRequest("POST", "/api/auth/register", reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// ConfirmRegistration confirms a user's registration
+func (c *Client) ConfirmRegistration(email string) (*AuthResponse, error) {
+	reqData := map[string]string{
+		"email": email,
+	}
+
+	reqBody, err := json.Marshal(reqData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal confirmation request: %w", err)
+	}
+
+	resp, err := c.doRequest("POST", "/api/auth/register/confirm", reqBody)
 	if err != nil {
 		return nil, err
 	}
