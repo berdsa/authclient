@@ -115,7 +115,7 @@ type PermissionRequest struct {
 
 // SetPasswordRequest represents a password change request
 type SetPasswordRequest struct {
-	Token    string `json:"token"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -241,7 +241,7 @@ func (c *Client) ResetPassword(token, currentPassword, newPassword string) (*Aut
 // SetPassword sets a new password for a user
 func (c *Client) SetPassword(email, password string) (*AuthResponse, error) {
 	reqData := SetPasswordRequest{
-		Token:    email,
+		Email:    email,
 		Password: password,
 	}
 
