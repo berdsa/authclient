@@ -303,11 +303,11 @@ func (c *Client) doRequest(method, endpoint string, body []byte) (*AuthResponse,
 	if resp.StatusCode >= 400 {
 		switch resp.StatusCode {
 		case http.StatusBadRequest:
-			return nil, fmt.Errorf("%w: %s", ErrInvalidRequestBody, authResp.Message)
+			return nil, fmt.Errorf("%s", authResp.Message)
 		case http.StatusUnauthorized:
-			return nil, fmt.Errorf("%w: %s", ErrInvalidCredentials, authResp.Message)
+			return nil, fmt.Errorf("%s", authResp.Message)
 		default:
-			return nil, fmt.Errorf("%w: %s", ErrServerError, authResp.Message)
+			return nil, fmt.Errorf("%s", authResp.Message)
 		}
 	}
 
@@ -336,7 +336,7 @@ func (c *Client) doRequestPermission(method, endpoint string, body []byte) (*Per
 
 	// Handle error responses
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("%w: %s", ErrServerError, resp.Body)
+		return nil, fmt.Errorf("%s", resp.Body)
 	}
 
 	return &permissionResp, nil
